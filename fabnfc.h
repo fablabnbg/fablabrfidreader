@@ -14,6 +14,14 @@ class FabNFC{
       STICKER='S',
       IMPLANT='I'
     };
+	enum IDENT_RESULT{
+		OK=0,
+		NO_CARD=1,
+		UNSUPPORTED_CARD=2,
+		NO_MAGIC=3,
+		UNSUPPORTED_CHIP=4,
+		SAME_CARD=0xFF
+	};
 
     FabNFC(MFRC522& NFC);
     byte identify();

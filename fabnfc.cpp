@@ -5,18 +5,18 @@ FabNFC::FabNFC(MFRC522& NFC):nfc(NFC),datasize(0){
 
 byte FabNFC::identify(){
 	if (!nfc.PICC_IsNewCardPresent()){
-		return 1;
+		return NO_CARD;
 	}
 
 	// is card's UID 7 Byte?
 	nfc.PICC_ReadCardSerial();
 	if (nfc.uid.size!=7){
-		return 2;
+		return UNSUPPORTED_CARD;
 	}
 
 	// is this card the same as last card?
 	if (memcmp(uid,nfc.uid.uidByte,7)==0){
-		return 0xff;
+		return SAME_CARD;
 	}
 
 	byte buffer[18];
@@ -25,7 +25,7 @@ byte FabNFC::identify(){
 	// check magic bytes for fablab card
 	nfc.MIFARE_Read(4,buffer,&size);
 	if (buffer[0]!=0xfa || buffer[1]!=0xb1){
-		return 3;
+		return NO_MAGIC;
 	}
 	use_type=buffer[2];
 	tag_type=buffer[3];
@@ -36,14 +36,14 @@ byte FabNFC::identify(){
 
 	// check if chip is supported
 	if(chip!=0x6d) {
-		return 4;
+		return UNSUPPORTED_CHIP;
 	}
 	offset_confpages=0xe3;
 
 	for(byte i=0;i<7;i++){
 		uid[i]=nfc.uid.uidByte[i];
 	}
-	return 0;
+	return OK;
 }
 
 void FabNFC::read(){

@@ -32,6 +32,7 @@ class FabNFC{
     void pw_set();
     byte pw_needed();
     byte uid[7];
+	byte isfablab;
     byte use_type;
     byte tag_type;
     byte locks[2];

@@ -1,6 +1,6 @@
 #include "fabnfc.h"
 
-FabNFC::FabNFC(MFRC522& NFC):nfc(NFC),datasize(0){
+FabNFC::FabNFC(MFRC522& NFC):nfc(NFC),isfablab(false),datasize(0){
 }
 
 byte FabNFC::identify(){
@@ -11,6 +11,7 @@ byte FabNFC::identify(){
 	// is card's UID 7 Byte?
 	nfc.PICC_ReadCardSerial();
 	if (nfc.uid.size!=7){
+		isfablab=false;
 		return UNSUPPORTED_CARD;
 	}
 
@@ -18,6 +19,7 @@ byte FabNFC::identify(){
 	if (memcmp(uid,nfc.uid.uidByte,7)==0){
 		return SAME_CARD;
 	}
+	isfablab=false;
 
 	byte buffer[18];
 	byte size=18;
@@ -43,6 +45,7 @@ byte FabNFC::identify(){
 	for(byte i=0;i<7;i++){
 		uid[i]=nfc.uid.uidByte[i];
 	}
+	isfablab=true;
 	return OK;
 }
 
@@ -57,6 +60,7 @@ void FabNFC::read(){
 
 byte FabNFC::write(){
 	if(datasize>=100) return 1; 
+	isfablab=true;
 	byte buffer[4];
 	buffer[0]=0xfa;
 	buffer[1]=0xb1;

@@ -42,7 +42,7 @@ void setup() {
 void loop() {
 
   int res=fabnfc.identify();
-  if (!(FabNFC::NO_MAGIC==3 || FabNFC::OK==0)) return;
+  if (!(res==FabNFC::NO_MAGIC || res==FabNFC::OK)) return;
 
   if (res==FabNFC::NO_MAGIC) { // magic number 0xFA 0xB1 not present
     fabnfc.write();

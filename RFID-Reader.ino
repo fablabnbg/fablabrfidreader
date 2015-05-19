@@ -22,6 +22,7 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include "fabnfc.h"
+#include "cmd_parse.h"
 
 #define RST_PIN		3
 #define SS_PIN		9
@@ -29,6 +30,11 @@
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);	// Create MFRC522 instance
 FabNFC fabnfc(mfrc522);
+Cmd_parse parser;
+
+byte card_seen=false;
+byte parsing
+
 
 void setup() {
   pinMode(BUZZ_PIN,OUTPUT);
@@ -39,45 +45,63 @@ void setup() {
   Serial.println(F("Running, waiting for card..."));
 }
 
+void do_error(){
+	Serial.println(F("Error"));
+	parser.reset();
+}
+
+void do_command(){
+	Serial.print(parser.cmd);
+	Serial.print(parser.arg1);
+	Serial.print(parser.arg2);
+	parser.reset();
+	switch (parser.cmd){
+		case 'f':
+			fabnfc.use_type=arg1;
+			fabnfc.tag_type=arg2;
+			break;
+		case 'w':
+			fabnfc.write();
+			break;
+		case 'r':
+			Serial.print(fabnfc.isfablab);
+			Serial.print(fabnfc.use_type);
+			Serial.print(fabnfc.tag_type);
+			break;
+		default:
+			Serial.println(F(" Err"));
+			return;
+	}
+	Serial.println(F(" OK"));
+}
+
 void loop() {
 
   int res=fabnfc.identify();
-  if (!(res==FabNFC::NO_MAGIC || res==FabNFC::OK)) return;
-
-  if (res==FabNFC::NO_MAGIC) { // magic number 0xFA 0xB1 not present
-    fabnfc.write();
-    return;
+  if (res==FabNFC::NO_CARD){
+	  if (card_seen){
+		  Serial.println(F("Card gone"));
+	  }
+  }else{
+	  card_seen=true;
+  }
+  if (res==FabNFC::NO_MAGIC){
+	  Serial.println(F("New foreign Card"));
+  }
+  if (res==FabNFC::OK){
+	  Serial.println(F("New Fablab Card"));
   }
 
-  Serial.print(F("UID:"));
-  dump_byte_array(fabnfc.uid,7);
-  Serial.println();
-
-  if(fabnfc.pw_needed()){
-    Serial.println(fabnfc.pw_auth());
+  while (Serial.available()){
+	  byte r=parser.parse_char(Serial.read());
+	  if (r!=0) break;
   }
-
-  // write stuffs
-  fabnfc.use_type=FabNFC::ACCESS;
-  fabnfc.tag_type=FabNFC::STICKER;
-  
-
-  fabnfc.data[0]=0x00;
-  fabnfc.data[1]=0x00;
-  fabnfc.data[2]=0x01;
-  fabnfc.data[3]=0x01;
-
-  fabnfc.datasize=4;
-  
-  fabnfc.write();
-
-  //fabnfc.pw_set();
-
-  
-
-  digitalWrite(BUZZ_PIN,HIGH);
-  delay(250);
-  digitalWrite(BUZZ_PIN,LOW);
+  if (parser.error){
+	  do_error();
+  }
+  if (parser.ready){
+	  do_command();
+  }
 
 }
 

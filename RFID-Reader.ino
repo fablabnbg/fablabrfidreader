@@ -37,12 +37,12 @@ byte parsing
 
 
 void setup() {
-  pinMode(BUZZ_PIN,OUTPUT);
-  Serial.begin(9600);		// Initialize serial communications with the PC
-  while (!Serial);		// Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
-  SPI.begin();			// Init SPI bus
-  mfrc522.PCD_Init();		// Init MFRC522
-  Serial.println(F("Running, waiting for card..."));
+	pinMode(BUZZ_PIN,OUTPUT);
+	Serial.begin(9600);		// Initialize serial communications with the PC
+	while (!Serial);		// Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
+	SPI.begin();			// Init SPI bus
+	mfrc522.PCD_Init();		// Init MFRC522
+	Serial.println(F("Running, waiting for card..."));
 }
 
 void do_error(){
@@ -77,37 +77,37 @@ void do_command(){
 
 void loop() {
 
-  int res=fabnfc.identify();
-  if (res==FabNFC::NO_CARD){
-	  if (card_seen){
-		  Serial.println(F("Card gone"));
-	  }
-  }else{
-	  card_seen=true;
-  }
-  if (res==FabNFC::NO_MAGIC){
-	  Serial.println(F("New foreign Card"));
-  }
-  if (res==FabNFC::OK){
-	  Serial.println(F("New Fablab Card"));
-  }
+	int res=fabnfc.identify();
+	if (res==FabNFC::NO_CARD){
+		if (card_seen){
+			Serial.println(F("Card gone"));
+		}
+	}else{
+		card_seen=true;
+	}
+	if (res==FabNFC::NO_MAGIC){
+		Serial.println(F("New foreign Card"));
+	}
+	if (res==FabNFC::OK){
+		Serial.println(F("New Fablab Card"));
+	}
 
-  while (Serial.available()){
-	  byte r=parser.parse_char(Serial.read());
-	  if (r!=0) break;
-  }
-  if (parser.error){
-	  do_error();
-  }
-  if (parser.ready){
-	  do_command();
-  }
+	while (Serial.available()){
+		byte r=parser.parse_char(Serial.read());
+		if (r!=0) break;
+	}
+	if (parser.error){
+		do_error();
+	}
+	if (parser.ready){
+		do_command();
+	}
 
 }
 
 void dump_byte_array(byte *buffer, byte bufferSize) {
-  for (byte i = 0; i < bufferSize; i++) {
-    Serial.print(buffer[i] < 0x10 ? " 0" : " ");
-    Serial.print(buffer[i], HEX);
-  }
+	for (byte i = 0; i < bufferSize; i++) {
+		Serial.print(buffer[i] < 0x10 ? " 0" : " ");
+		Serial.print(buffer[i], HEX);
+	}
 }

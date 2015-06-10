@@ -8,7 +8,7 @@ struct Cmd_parse{
 		ARG1,
 		ARG2,
 		EXPECT_WS
-	}
+	};
 	Cmd_parse();
 
 	byte parse_char(char c);

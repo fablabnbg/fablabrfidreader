@@ -1,3 +1,4 @@
+typedef char byte;
 #include "cmd_parse.h"
 
 Cmd_parse::Cmd_parse(){
@@ -32,11 +33,10 @@ byte Cmd_parse::parse_char(char c){
 			}
 			break;
 	}
-	return 0
-
+	return 0;
 }
 
-void reset(){
+void Cmd_parse::reset(){
 	ready=0;
 	state=SKIP_WS;
 	error=0;

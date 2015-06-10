@@ -1,6 +1,6 @@
 #ifndef FABNFC_H
 #define FABNFC_H
-#include <MFRC522.h>
+#include "MFRC522.h"
 
 class FabNFC{
 	public:
@@ -40,6 +40,7 @@ class FabNFC{
 		byte datasize;
 		byte chip;
 		byte offset_confpages;
+		bool has_card;
 	private:
 		MFRC522& nfc;
 };

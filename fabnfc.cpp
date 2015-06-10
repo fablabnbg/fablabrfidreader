@@ -1,15 +1,26 @@
 #include "fabnfc.h"
 
-FabNFC::FabNFC(MFRC522& NFC):nfc(NFC),isfablab(false),datasize(0){
+FabNFC::FabNFC(MFRC522& NFC):nfc(NFC),isfablab(false),datasize(0),has_card(false){
 }
 
 byte FabNFC::identify(){
-	if (!nfc.PICC_IsNewCardPresent()){
-		return NO_CARD;
+	byte buffer[18];
+	byte size=18;
+
+	//check if card is still there
+	if (nfc.MIFARE_Read(4,buffer,&size)!=MFRC522::STATUS_OK){
+		has_card=false;
+	}
+	if (!has_card){
+		memset(uid,0,sizeof(uid));
+		if (! nfc.PICC_IsNewCardPresent()){
+			return NO_CARD;
+		}
+		has_card=true;
+		nfc.PICC_ReadCardSerial();
 	}
 
 	// is card's UID 7 Byte?
-	nfc.PICC_ReadCardSerial();
 	if (nfc.uid.size!=7){
 		isfablab=false;
 		return UNSUPPORTED_CARD;
@@ -19,21 +30,29 @@ byte FabNFC::identify(){
 	if (memcmp(uid,nfc.uid.uidByte,7)==0){
 		return SAME_CARD;
 	}
-	isfablab=false;
 
-	byte buffer[18];
-	byte size=18;
+	// copy uid from card driver to local property
+	for(byte i=0;i<7;i++){
+		uid[i]=nfc.uid.uidByte[i];
+	}
 
 	// check magic bytes for fablab card
-	nfc.MIFARE_Read(4,buffer,&size);
+	if (nfc.MIFARE_Read(4,buffer,&size)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return NO_CARD;
+	}
 	if (buffer[0]!=0xfa || buffer[1]!=0xb1){
+		isfablab=false;
 		return NO_MAGIC;
 	}
 	use_type=buffer[2];
 	tag_type=buffer[3];
 
 	// read CC (Capability Container) to identify chip
-	nfc.MIFARE_Read(3,buffer,&size);
+	if (nfc.MIFARE_Read(3,buffer,&size)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return NO_CARD;
+	}
 	chip=buffer[2];
 
 	// check if chip is supported
@@ -42,23 +61,29 @@ byte FabNFC::identify(){
 	}
 	offset_confpages=0xe3;
 
-	for(byte i=0;i<7;i++){
-		uid[i]=nfc.uid.uidByte[i];
-	}
 	isfablab=true;
 	return OK;
 }
 
 void FabNFC::read(){
+	if (!has_card){
+		return;
+	}
 	byte buffer[18];
 	byte size=sizeof(buffer);
-	nfc.MIFARE_Read(5,buffer,&size);
+	if (nfc.MIFARE_Read(5,buffer,&size)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return;
+	}
 	for(byte i=0;i<16;i++){
 		data[i]=buffer[i];
 	}
 }
 
 byte FabNFC::write(){
+	if (!has_card){
+		return 2;
+	}
 	if(datasize>=100) return 1; 
 	isfablab=true;
 	byte buffer[4];
@@ -66,7 +91,10 @@ byte FabNFC::write(){
 	buffer[1]=0xb1;
 	buffer[2]=use_type;
 	buffer[3]=tag_type;
-	nfc.MIFARE_Ultralight_Write(4,buffer,sizeof(buffer));
+	if (nfc.MIFARE_Ultralight_Write(4,buffer,sizeof(buffer))!=MFRC522::STATUS_OK){
+		has_card=false;
+		return 2;
+	}
 
 	byte normsize=(datasize+4)>>2; // round to next multiple of 4 and divide by 4
 	data[datasize]=0;
@@ -75,7 +103,10 @@ byte FabNFC::write(){
 		for(byte i=0;i<4;i++){
 			buffer[i]=data[block*4+i];
 		}
-		nfc.MIFARE_Ultralight_Write(5+block,buffer,sizeof(buffer));
+		if(nfc.MIFARE_Ultralight_Write(5+block,buffer,sizeof(buffer))!=MFRC522::STATUS_OK){
+			has_card=false;
+			return 2;
+		}
 	}
 	return 0;
 }
@@ -102,23 +133,38 @@ void FabNFC::pw_set(){
 	byte buffer[]={
 		0xfa,0xb1,0xab,0xff	// password to set
 	};
-	nfc.MIFARE_Ultralight_Write(offset_confpages+2,buffer,sizeof(buffer));
+	if (nfc.MIFARE_Ultralight_Write(offset_confpages+2,buffer,sizeof(buffer))!=MFRC522::STATUS_OK){
+		has_card=false;
+		return;
+	}
 
 	//set AUTH0 and ACCESS
 	byte readbuffer[18];
 	byte size=sizeof(readbuffer);
-	nfc.MIFARE_Read(offset_confpages,readbuffer,&size);
+	if (nfc.MIFARE_Read(offset_confpages,readbuffer,&size)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return;
+	}
 	readbuffer[3]=0;
 	readbuffer[4]=0;
-	nfc.MIFARE_Ultralight_Write(offset_confpages,readbuffer,4);
-	nfc.MIFARE_Ultralight_Write(offset_confpages+1,readbuffer+4,4);
+	if (nfc.MIFARE_Ultralight_Write(offset_confpages,readbuffer,4)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return;
+	}
+	if (nfc.MIFARE_Ultralight_Write(offset_confpages+1,readbuffer+4,4)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return;
+	}
 }
 
 byte FabNFC::pw_needed(){
 	//read AUTH0
 	byte readbuffer[18];
 	byte size=sizeof(readbuffer);
-	nfc.MIFARE_Read(offset_confpages,readbuffer,&size);
+	if (nfc.MIFARE_Read(offset_confpages,readbuffer,&size)!=MFRC522::STATUS_OK){
+		has_card=false;
+		return 0;
+	}
 	if(readbuffer[3]<=30){
 		return 1;
 	}

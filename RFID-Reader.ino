@@ -20,7 +20,7 @@
  */
 
 #include <SPI.h>
-#include <MFRC522.h>
+#include "MFRC522.h"
 #include "fabnfc.h"
 #include "cmd_parse.h"
 
@@ -33,7 +33,7 @@ FabNFC fabnfc(mfrc522);
 Cmd_parse parser;
 
 byte card_seen=false;
-byte parsing
+byte parsing;
 
 
 void setup() {
@@ -51,22 +51,27 @@ void do_error(){
 }
 
 void do_command(){
-	Serial.print(parser.cmd);
-	Serial.print(parser.arg1);
-	Serial.print(parser.arg2);
+	Serial.print(static_cast<char>(parser.cmd));
+	Serial.print(static_cast<char>(parser.arg1));
+	Serial.print(static_cast<char>(parser.arg2));
+	Serial.print(' ');
 	parser.reset();
 	switch (parser.cmd){
 		case 'f':
-			fabnfc.use_type=arg1;
-			fabnfc.tag_type=arg2;
+			fabnfc.use_type=parser.arg1;
+			fabnfc.tag_type=parser.arg2;
 			break;
 		case 'w':
 			fabnfc.write();
 			break;
 		case 'r':
+			dump_byte_array(fabnfc.uid,sizeof(fabnfc.uid));
+			Serial.print(':');
 			Serial.print(fabnfc.isfablab);
-			Serial.print(fabnfc.use_type);
-			Serial.print(fabnfc.tag_type);
+			Serial.print(':');
+			Serial.print(static_cast<char>(fabnfc.use_type));
+			Serial.print(':');
+			Serial.print(static_cast<char>(fabnfc.tag_type));
 			break;
 		default:
 			Serial.println(F(" Err"));
@@ -77,19 +82,34 @@ void do_command(){
 
 void loop() {
 
-	int res=fabnfc.identify();
+	byte res=fabnfc.identify();
 	if (res==FabNFC::NO_CARD){
 		if (card_seen){
 			Serial.println(F("Card gone"));
+			card_seen=false;
 		}
 	}else{
 		card_seen=true;
 	}
-	if (res==FabNFC::NO_MAGIC){
-		Serial.println(F("New foreign Card"));
-	}
-	if (res==FabNFC::OK){
-		Serial.println(F("New Fablab Card"));
+	switch (res){
+		case FabNFC::NO_MAGIC:
+			Serial.println(F("New foreign Card"));
+			break;
+		case FabNFC::OK:
+			Serial.println(F("New Fablab Card"));
+			break;
+		case FabNFC::UNSUPPORTED_CHIP:
+			Serial.println(F("Unsupported chip"));
+			break;
+		case FabNFC::UNSUPPORTED_CARD:
+			Serial.println(F("Unsupported card"));
+			break;
+		case FabNFC::NO_CARD:
+		case FabNFC::SAME_CARD:
+			break;
+		default:
+			Serial.print(F("Unknown reply to identify: "));
+			Serial.println(res);
 	}
 
 	while (Serial.available()){

@@ -93,16 +93,24 @@ void loop() {
 	}
 	switch (res){
 		case FabNFC::NO_MAGIC:
-			Serial.println(F("New foreign Card"));
+			Serial.print(F("New foreign Card:"));
+			dump_byte_array(fabnfc.uid,sizeof(fabnfc.uid));
+			Serial.println("");
 			break;
 		case FabNFC::OK:
-			Serial.println(F("New Fablab Card"));
+			Serial.print(F("New Fablab Card:"));
+			dump_byte_array(fabnfc.uid,sizeof(fabnfc.uid));
+			Serial.println("");
 			break;
 		case FabNFC::UNSUPPORTED_CHIP:
-			Serial.println(F("Unsupported chip"));
+			Serial.print(F("Unsupported chip:"));
+			dump_byte_array(fabnfc.uid,sizeof(fabnfc.uid));
+			Serial.println("");
 			break;
 		case FabNFC::UNSUPPORTED_CARD:
-			Serial.println(F("Unsupported card"));
+			Serial.print(F("Unsupported card:"));
+			dump_byte_array(fabnfc.uid,sizeof(fabnfc.uid));
+			Serial.println("");
 			break;
 		case FabNFC::NO_CARD:
 		case FabNFC::SAME_CARD:

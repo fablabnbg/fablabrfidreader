@@ -34,6 +34,7 @@ Cmd_parse parser;
 
 byte card_seen=false;
 byte parsing;
+int beep_timer;
 
 
 void setup() {
@@ -43,11 +44,25 @@ void setup() {
 	SPI.begin();			// Init SPI bus
 	mfrc522.PCD_Init();		// Init MFRC522
 	Serial.println(F("Running, waiting for card..."));
+  pinMode(4,OUTPUT);
 }
 
 void do_error(){
 	Serial.println(F("Error"));
 	parser.reset();
+}
+
+void beep(int duration){
+  digitalWrite(4,HIGH);
+  beep_timer=duration;
+}
+
+void beep_step(){
+  if (beep_timer<0){
+    digitalWrite(4,LOW);
+  } else {
+    beep_timer-=1;
+  }
 }
 
 void do_command(){
@@ -73,6 +88,13 @@ void do_command(){
 			Serial.print(':');
 			Serial.print(static_cast<char>(fabnfc.tag_type));
 			break;
+    case 'b':
+      {
+        int duration=(parser.arg1-'0')*10+parser.arg2-'0';
+        beep(duration*10);
+        //beep(1000);
+      }
+      break;
 		default:
 			Serial.println(F(" Err"));
 			return;
@@ -81,7 +103,7 @@ void do_command(){
 }
 
 void loop() {
-
+  beep_step();
 	byte res=fabnfc.identify();
 	if (res==FabNFC::NO_CARD){
 		if (card_seen){

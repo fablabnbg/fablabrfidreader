@@ -43,8 +43,13 @@ void setup() {
 	while (!Serial);		// Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
 	SPI.begin();			// Init SPI bus
 	mfrc522.PCD_Init();		// Init MFRC522
+  show_version();
 	Serial.println(F("Running, waiting for card..."));
   pinMode(4,OUTPUT);
+}
+
+void show_version(){
+  Serial.println(F("V1.0"));
 }
 
 void do_error(){
@@ -72,14 +77,14 @@ void do_command(){
 	Serial.print(' ');
 	parser.reset();
 	switch (parser.cmd){
-		case 'f':
+		case 'F':
 			fabnfc.use_type=parser.arg1;
 			fabnfc.tag_type=parser.arg2;
 			break;
-		case 'w':
+		case 'W':
 			fabnfc.write();
 			break;
-		case 'r':
+		case 'R':
 			dump_byte_array(fabnfc.uid,sizeof(fabnfc.uid));
 			Serial.print(':');
 			Serial.print(fabnfc.isfablab);
@@ -88,12 +93,15 @@ void do_command(){
 			Serial.print(':');
 			Serial.print(static_cast<char>(fabnfc.tag_type));
 			break;
-    case 'b':
+    case 'B':
       {
         int duration=(parser.arg1-'0')*10+parser.arg2-'0';
         beep(duration*10);
         //beep(1000);
       }
+      break;
+    case 'V':
+      show_version();
       break;
 		default:
 			Serial.println(F(" Err"));

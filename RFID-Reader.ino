@@ -95,7 +95,7 @@ void do_command(){
     case 'B':
       {
         int duration=(parser.arg1-'0')*10+parser.arg2-'0';
-        beep(duration*10);
+        beep(duration*1);
         //beep(1000);
       }
       break;

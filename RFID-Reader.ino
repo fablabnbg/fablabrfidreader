@@ -26,7 +26,7 @@
 
 #define RST_PIN		3
 #define SS_PIN		9
-#define BUZZ_PIN  5
+#define BUZZ_PIN  4
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);	// Create MFRC522 instance
 FabNFC fabnfc(mfrc522);
@@ -45,7 +45,6 @@ void setup() {
 	mfrc522.PCD_Init();		// Init MFRC522
   show_version();
 	Serial.println(F("Running, waiting for card..."));
-  pinMode(4,OUTPUT);
 }
 
 void show_version(){
@@ -58,13 +57,13 @@ void do_error(){
 }
 
 void beep(int duration){
-  digitalWrite(4,HIGH);
+  digitalWrite(BUZZ_PIN,HIGH);
   beep_timer=duration;
 }
 
 void beep_step(){
   if (beep_timer<0){
-    digitalWrite(4,LOW);
+    digitalWrite(BUZZ_PIN,LOW);
   } else {
     beep_timer-=1;
   }

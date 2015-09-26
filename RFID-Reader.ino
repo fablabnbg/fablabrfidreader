@@ -24,9 +24,9 @@
 #include "fabnfc.h"
 #include "cmd_parse.h"
 
-#define RST_PIN		3
-#define SS_PIN		9
-#define BUZZ_PIN  4
+#define RST_PIN		20
+#define SS_PIN		10
+#define BUZZ_PIN  9
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);	// Create MFRC522 instance
 FabNFC fabnfc(mfrc522);
@@ -43,6 +43,12 @@ void setup() {
 	while (!Serial);		// Do nothing if no serial port is opened (added for Arduinos based on ATMEGA32U4)
 	SPI.begin();			// Init SPI bus
 	mfrc522.PCD_Init();		// Init MFRC522
+
+  TCCR1A = _BV(COM1A1);
+  TCCR1B = _BV(WGM13) | _BV(CS11);
+  ICR1 = 126;
+  OCR1A = 0;
+  
   show_version();
 	Serial.println(F("Running, waiting for card..."));
 }
@@ -57,13 +63,13 @@ void do_error(){
 }
 
 void beep(int duration){
-  digitalWrite(BUZZ_PIN,HIGH);
+  OCR1A = 68;
   beep_timer=duration;
 }
 
 void beep_step(){
   if (beep_timer<0){
-    digitalWrite(BUZZ_PIN,LOW);
+    OCR1A = 0;
   } else {
     beep_timer-=1;
   }
